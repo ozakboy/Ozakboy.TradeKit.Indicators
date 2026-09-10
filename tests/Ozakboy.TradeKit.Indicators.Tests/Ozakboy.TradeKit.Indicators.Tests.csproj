@@ -1,0 +1,52 @@
+<!--
+  這裡刻意不用 <Project Sdk="Microsoft.NET.Sdk"> 的簡寫,改為手動 Import。
+  簡寫形式會在專案內容之前就載入 Sdk.props(進而載入根目錄的 Directory.Build.props),
+  屆時 IsTestProject 還沒設定,Directory.Build.props 中「測試專案」那一段條件不會成立,
+  測試碼會被套上 TreatWarningsAsErrors 與 AnalysisLevel=latest-all。
+  先設好屬性再 Import,根目錄的共用設定才能正確分辨這是測試專案。
+
+  The Sdk attribute shorthand loads Sdk.props (and with it the root Directory.Build.props) before this
+  file's own properties are set, so IsTestProject would still be empty and the test-project branch of
+  Directory.Build.props would never apply. Setting the property first and importing explicitly is what
+  lets the shared props recognise this as a test project.
+-->
+<Project>
+
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+
+  <PropertyGroup>
+    <AssemblyName>Ozakboy.TradeKit.Indicators.Tests</AssemblyName>
+    <RootNamespace>Ozakboy.TradeKit.Indicators.Tests</RootNamespace>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+    <!--
+      CA1707(識別字不得含底線)只在此測試專案關閉。
+      測試方法採用業界通用的 Method_Scenario_ExpectedResult 命名,底線是刻意的分隔符號,
+      失敗報告靠它才讀得懂;為了規避這條規則而改名,反而會犧牲測試的可讀性。
+      產品專案(src)完全不受影響,仍維持零警告。
+      CA1707 (no underscores in identifiers) is disabled for this test project only. Test methods use the
+      conventional Method_Scenario_ExpectedResult naming where the underscores are deliberate separators
+      that make failure reports readable. The product project keeps the rule and stays warning-free.
+    -->
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MSTest" Version="4.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Ozakboy.TradeKit.Indicators\Ozakboy.TradeKit.Indicators.csproj" />
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+
+</Project>
