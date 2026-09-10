@@ -20,15 +20,12 @@
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!--
-      10.0.300 會帶進有 CVE-2026-62900 資訊揭露弱點的 Microsoft.Build.Tasks.Git(NuGet 稽核報 NU1902),
-      在 TreatWarningsAsErrors 之下直接建置失敗;10.0.303 是官方修補版。
-    -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.303">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-  </ItemGroup>
+  <!--
+    刻意不引用 Microsoft.SourceLink.GitHub 套件。
+    自 .NET 8 起 SourceLink 已內建於 SDK,只要設定 PublishRepositoryUrl 與 EmbedUntrackedSources
+    (見 Directory.Build.props)即可產生原始碼連結;外掛套件反而會帶進額外的相依鏈,
+    其中 Microsoft.Build.Tasks.Git 曾有安全通報(NU1902),在 TreatWarningsAsErrors 之下會讓還原階段直接失敗。
+    本套件因此維持零 NuGet 相依。
+  -->
 
 </Project>

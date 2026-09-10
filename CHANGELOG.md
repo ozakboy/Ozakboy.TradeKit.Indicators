@@ -35,8 +35,11 @@ Initial release.
 
 ### Notes
 
-- Targets `net10.0`. No third-party runtime dependencies; the only package reference is the build-only
-  `Microsoft.SourceLink.GitHub`.
+- Targets `net10.0`. The library project has no `PackageReference` at all: Source Link is provided by the .NET
+  SDK itself (`PublishRepositoryUrl` and `EmbedUntrackedSources`), so no package is needed for it.
+- RSI on a completely flat window, where the average gain and the average loss are both `0`, returns `100`.
+  The standard formula only defines the single-sided zero cases, so this boundary is a deliberate choice made
+  to match what most technical-analysis libraries return; see the `RsiIndicator` documentation for the reasoning.
 - All arithmetic is performed in `decimal`. `double` and `float` are not used anywhere.
 - Batch and streaming results are asserted exactly equal, with no tolerance, across a range of periods for
   every indicator.

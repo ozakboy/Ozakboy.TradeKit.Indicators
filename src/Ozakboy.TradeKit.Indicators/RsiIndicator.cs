@@ -20,8 +20,15 @@ namespace Ozakboy.TradeKit.Indicators;
 /// <list type="bullet">
 ///   <item><description>平均跌幅為 0 且平均漲幅大於 0 → RSI = 100(公認慣例)。Average loss 0 with a positive average gain gives RSI = 100, the standard convention.</description></item>
 ///   <item><description>平均漲幅為 0 且平均跌幅大於 0 → RSI = 0。Average gain 0 with a positive average loss gives RSI = 0.</description></item>
-///   <item><description>兩者皆為 0(整段完全沒有價格變動)→ RSI = 50。此情境沒有公認答案,本函式庫選擇中性值,避免把「毫無波動」誤報成「極度超買」。Both zero (a completely flat window) gives RSI = 50. There is no agreed convention here; this library returns the neutral value rather than reporting a flat market as extremely overbought.</description></item>
+///   <item><description>兩者皆為 0(整段完全沒有價格變動)→ RSI = 100。標準公式只定義了單邊為 0 的兩種情形,這個邊界沒有公認答案;本函式庫刻意跟隨業界慣例——多數實作的除以零分支只看分母(平均跌幅),平均跌幅為 0 就回傳 100,持平序列自然落在同一條分支。身為公開套件,與多數函式庫給出一致的數值,優先於自訂一個中性值。Both zero (a completely flat window) gives RSI = 100. The standard formula defines only the two single-sided zero cases, so this boundary has no agreed answer; this library deliberately follows the common convention, where the zero-denominator branch keys on the average loss alone and a flat series therefore falls into it. For a published package, matching what most libraries return matters more than picking a bespoke neutral value.</description></item>
 /// </list>
+/// <para>
+/// <b>持平序列的取捨。</b>回傳 100 的代價是「毫無波動」看起來像「極度超買」;
+/// 若策略需要分辨這兩者,請自行檢查價格是否有變動(例如同時觀察 ATR 或標準差),不要只看 RSI。
+/// <b>Trade-off on flat series.</b> The cost of returning 100 is that a motionless market reads as extremely
+/// overbought. Strategies that need to tell the two apart should check whether the price moved at all — for
+/// example by watching ATR or the standard deviation alongside the RSI.
+/// </para>
 /// <para>
 /// <b>實作。</b>只保留前一根收盤價與兩個滑動平均值,記憶體為常數。
 /// <b>Implementation.</b> Only the previous close and the two smoothed averages are kept, so memory is constant.
@@ -158,9 +165,13 @@ public sealed class RsiIndicator : IIndicator<decimal, decimal>, IIndicator<Cand
     {
         if (averageLoss == 0m)
         {
-            // 完全沒有波動時沒有公認答案,取中性值;只有上漲沒有下跌才是真正的極度超買。
-            // A completely flat window has no agreed answer, so return neutral; only pure gains mean truly overbought.
-            return averageGain == 0m ? 50m : 100m;
+            // 平均跌幅為 0 一律回傳 100,包含「漲跌幅同時為 0」的完全持平情境。
+            // 標準公式沒有定義同時為 0 的答案,這裡選擇跟隨業界慣例:多數函式庫的除以零分支只看分母,
+            // 因此持平序列也會得到 100。本函式庫身為公開套件,一致性優先於自訂的中性值。
+            // A zero average loss always yields 100, including the completely flat case where both averages are 0.
+            // The standard formula leaves that case undefined; following the common convention keeps this library
+            // in line with what most implementations return, which matters more here than a bespoke neutral value.
+            return 100m;
         }
 
         if (averageGain == 0m)

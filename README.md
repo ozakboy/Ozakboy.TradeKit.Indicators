@@ -27,7 +27,7 @@ Three things follow from that split, and they are the reason to prefer this over
 dotnet add package Ozakboy.TradeKit.Indicators
 ```
 
-Targets `net10.0`. The only package reference is `Microsoft.SourceLink.GitHub`, and it is build-only — nothing ships in your dependency tree.
+Targets `net10.0`. The library has no package reference of any kind — nothing is added to your dependency tree.
 
 ## Indicators
 
@@ -137,7 +137,7 @@ Indicator definitions differ between charting packages. These are the choices th
 These are not theoretical corners; live markets produce them regularly.
 
 - RSI with an average loss of `0` and a positive average gain returns `100`, the standard convention. Average gain of `0` returns `0`.
-- RSI on a **completely flat window**, where both averages are `0`, returns `50`. There is no agreed convention here; returning the neutral value avoids reporting a motionless market as extremely overbought.
+- RSI on a **completely flat window**, where both averages are `0`, returns `100`. The standard formula defines only the two single-sided zero cases, so this boundary has no agreed answer; the library deliberately follows the common convention, where the zero-denominator branch keys on the average loss alone and a flat series therefore falls into it. The cost is that a motionless market reads as extremely overbought, so a strategy that needs to tell the two apart should check whether the price moved at all — for example by watching ATR alongside the RSI.
 - ADX with a smoothed true range of `0`, or with `+DI + -DI` equal to `0`, reports `0` — no range, therefore no directionality.
 
 ## Accuracy

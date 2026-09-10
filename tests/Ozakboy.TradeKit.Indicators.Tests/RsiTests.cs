@@ -109,11 +109,11 @@ public sealed class RsiTests
     }
 
     /// <summary>
-    /// 除以零情境三:完全沒有價格變動時漲跌幅同時為 0,本函式庫回傳中性的 50,
-    /// 而不是把「毫無波動」誤報成「極度超買」。
+    /// 除以零情境三:完全沒有價格變動時漲跌幅同時為 0。標準公式沒有定義這個邊界,
+    /// 本函式庫跟隨業界慣例,把它併入「平均跌幅為 0」那條分支,回傳 100。
     /// </summary>
     [TestMethod]
-    public void Update_CompletelyFlatSeries_ReturnsNeutralFifty()
+    public void Update_CompletelyFlatSeries_ReturnsHundred()
     {
         RsiIndicator indicator = new(14);
         decimal? value = null;
@@ -123,7 +123,7 @@ public sealed class RsiTests
             value = indicator.Update(100m);
         }
 
-        Assert.AreEqual(50m, value);
+        Assert.AreEqual(100m, value, "持平序列的平均跌幅為 0,依業界慣例回傳 100");
     }
 
     [TestMethod]
