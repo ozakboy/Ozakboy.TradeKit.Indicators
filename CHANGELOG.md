@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-11
+
+### Added
+
+- Package icon. The shared ozakboy brand mark now shows on nuget.org and in IDE package managers.
+
+No code changed in this release. NuGet package metadata cannot be altered on an already-published
+version, so refreshing the icon requires publishing a new one.
+
 ## [0.1.0] - 2026-09-11
 
 Initial release.
@@ -44,5 +53,6 @@ Initial release.
 - Batch and streaming results are asserted exactly equal, with no tolerance, across a range of periods for
   every indicator.
 
-[Unreleased]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/releases/tag/v0.1.0
