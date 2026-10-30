@@ -128,6 +128,11 @@ public sealed class IndicatorContractTests
         DonchianChannelIndicator donchian = new(5);
         AdxIndicator adx = new(5);
 
+        // VWAP 沒有週期,但「還沒有成交量」就是它的暖身期:Volume 預設為 0,同一根持平 K 線在這裡必須是 null 而不是 0。
+        // VWAP has no period; "no volume yet" is its warm-up. Volume defaults to 0, so the same flat bar must give null, not 0.
+        VwapIndicator vwap = new(time => DateOnly.FromDateTime(time.UtcDateTime));
+        VwapBar flatBar = new(default, 100m, 100m, 100m, flat.Volume, null);
+
         for (int i = 0; i < 4; i++)
         {
             Assert.IsNull(sma.Update(flat), "SMA 暖身期");
@@ -138,6 +143,8 @@ public sealed class IndicatorContractTests
             Assert.IsNull(bollinger.Update(flat), "布林 暖身期");
             Assert.IsNull(donchian.Update(flat), "唐奇安 暖身期");
             Assert.IsNull(adx.Update(flat), "ADX 暖身期");
+            Assert.IsNull(vwap.Update(flatBar), "VWAP 尚無成交量");
+            Assert.IsFalse(vwap.IsReady, "VWAP 尚無成交量時不得就緒");
 
             Assert.IsNull(sma.Current);
             Assert.IsNull(rsi.Current);
@@ -156,6 +163,7 @@ public sealed class IndicatorContractTests
         Assert.AreEqual("BB(20,2)", new BollingerBandsIndicator(20, 2m).Name);
         Assert.AreEqual("DC(20)", new DonchianChannelIndicator(20).Name);
         Assert.AreEqual("ADX(14)", new AdxIndicator(14).Name);
+        Assert.AreEqual("VWAP(1000)", new VwapIndicator(time => DateOnly.FromDateTime(time.UtcDateTime), 1000m).Name);
     }
 
     [TestMethod]

@@ -41,10 +41,50 @@ dotnet add package Ozakboy.TradeKit.Indicators
 | 布林通道 | `BollingerBands.Calculate` | `BollingerBandsIndicator` | `BollingerBandsResult` | `n` |
 | 唐奇安通道 | `DonchianChannel.Calculate` | `DonchianChannelIndicator` | `DonchianChannelResult` | `n` |
 | 平均趨向指標 | `Adx.Calculate` | `AdxIndicator` | `AdxResult` | `2n` |
+| 成交量加權平均價 | `Vwap.Calculate` | `VwapIndicator` | `decimal` | 時段內第一根有成交量的 K 線 |
 
 RSI 要 `n + 1` 筆是因為 `n` 個價差需要 `n + 1` 個價格。ADX 要 `2n` 根是因為兩段 Wilder 平滑串在一起:第一段把方向動能平滑起來,第二段再對算出的 DX 取平均。
 
-需要高低價的指標(ATR、唐奇安、ADX)吃 `Candle`;其餘吃 `decimal` 價格,同時也接受 `Candle` 當作方便寫法,取其收盤價。
+需要高低價的指標(ATR、唐奇安、ADX)吃 `Candle`;其餘吃 `decimal` 價格,同時也接受 `Candle` 當作方便寫法,取其收盤價。VWAP 是例外:它吃 `VwapBar`,除了高低收之外還帶時間、成交量與選填的成交金額。
+
+## VWAP
+
+VWAP 每個交易時段重設一次。時段怎麼切由你決定:傳入 `sessionOf`,把每根 K 線的時間映射成一個日期,日期一變累計值就歸零重算。
+
+```csharp
+using Ozakboy.TradeKit.Indicators;
+
+// 台股:時段就是台北的日曆日期。
+static DateOnly TaipeiDate(DateTimeOffset time)
+    => DateOnly.FromDateTime(time.ToOffset(TimeSpan.FromHours(8)).DateTime);
+
+// Amount 是「價 × 股數」,Volume 卻是張(1 張 = 1,000 股),所以係數傳 1000。
+// 期貨的 Amount 是「價 × 口」,傳 1。
+VwapIndicator vwap = new(TaipeiDate, volumeMultiplier: 1000m);
+
+DateTimeOffset open = new(2026, 10, 30, 9, 0, 0, TimeSpan.FromHours(8));
+
+decimal? first = vwap.Update(new VwapBar(open, 2500m, 2480m, 2490m, 1859m, 4_628_910_000m));
+decimal? second = vwap.Update(new VwapBar(open.AddMinutes(1), 2505m, 2490m, 2495m, 60m, 149_700_000m));
+// first == 2490,second 約為 2490.1563
+
+// 批次版參數相同,回傳與輸入索引對齊的序列。
+IReadOnlyList<decimal?> series = Vwap.Calculate(bars, TaipeiDate, 1000m);
+```
+
+每根 K 線的貢獻方式:
+
+- 分母加上 `Volume × volumeMultiplier`。
+- 分子:這根有 `Amount` 就加 `Amount`;沒有就加典型價 `(High + Low + Close) / 3` 乘上 `Volume × volumeMultiplier`。同一個時段裡可以混用有、無成交金額的 K 線。
+- 結果是分子除以分母。
+
+邊界情形:
+
+- 時段內還沒有任何成交量時回傳 `null`,`IsReady` 為 `false`。
+- 時段內已經有值之後,某根成交量為 0,會沿用上一個值。
+- 新時段不會繼承上一個時段的值。
+- 成交量或成交金額為負數時丟出 `ArgumentOutOfRangeException`。VWAP 不檢查時間是否遞增,請先依時間排序。
+- 期貨有夜盤時,請在 `sessionOf` 裡把夜盤時間映射到下一個交易日,夜盤才會與該日日盤一起累計。
 
 ## 批次計算範例
 

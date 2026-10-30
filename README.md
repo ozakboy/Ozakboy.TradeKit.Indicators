@@ -41,10 +41,50 @@ Targets `net10.0`. The library has no package reference of any kind — nothing 
 | Bollinger Bands | `BollingerBands.Calculate` | `BollingerBandsIndicator` | `BollingerBandsResult` | `n` |
 | Donchian Channel | `DonchianChannel.Calculate` | `DonchianChannelIndicator` | `DonchianChannelResult` | `n` |
 | Average Directional Index | `Adx.Calculate` | `AdxIndicator` | `AdxResult` | `2n` |
+| Volume-Weighted Average Price | `Vwap.Calculate` | `VwapIndicator` | `decimal` | first bar of a session with volume |
 
 RSI needs `n + 1` prices because `n` price changes require `n + 1` prices. ADX needs `2n` candles because two Wilder smoothing stages stack: the first produces smoothed directional movement, the second averages the resulting DX readings.
 
-Indicators that need highs and lows (ATR, Donchian, ADX) take `Candle`. The rest take a `decimal` price, and also accept `Candle` as a convenience — they use its close.
+Indicators that need highs and lows (ATR, Donchian, ADX) take `Candle`. The rest take a `decimal` price, and also accept `Candle` as a convenience — they use its close. VWAP is the exception: it takes `VwapBar`, which adds a time, a volume and an optional traded amount to the high, low and close.
+
+## VWAP
+
+VWAP resets at every trading session. You decide where a session ends by passing `sessionOf`, which maps a bar's time to a date. The sums restart whenever that date changes.
+
+```csharp
+using Ozakboy.TradeKit.Indicators;
+
+// Taiwan stocks: the session is the Taipei calendar date.
+static DateOnly TaipeiDate(DateTimeOffset time)
+    => DateOnly.FromDateTime(time.ToOffset(TimeSpan.FromHours(8)).DateTime);
+
+// Amount is "price x shares" but Volume counts lots of 1,000 shares, so the multiplier is 1000.
+// Pass 1 for futures, where Amount is "price x contracts".
+VwapIndicator vwap = new(TaipeiDate, volumeMultiplier: 1000m);
+
+DateTimeOffset open = new(2026, 10, 30, 9, 0, 0, TimeSpan.FromHours(8));
+
+decimal? first = vwap.Update(new VwapBar(open, 2500m, 2480m, 2490m, 1859m, 4_628_910_000m));
+decimal? second = vwap.Update(new VwapBar(open.AddMinutes(1), 2505m, 2490m, 2495m, 60m, 149_700_000m));
+// first == 2490, second is about 2490.1563
+
+// The batch form takes the same arguments and returns an index-aligned list.
+IReadOnlyList<decimal?> series = Vwap.Calculate(bars, TaipeiDate, 1000m);
+```
+
+How each bar contributes:
+
+- The denominator gains `Volume x volumeMultiplier`.
+- The numerator gains `Amount` when the bar has one. Otherwise it gains the typical price `(High + Low + Close) / 3` times `Volume x volumeMultiplier`. You can mix bars with and without an amount in one session.
+- The result is numerator divided by denominator.
+
+Edge cases:
+
+- While the session has traded no volume yet, VWAP returns `null`, and `IsReady` is `false`.
+- After the session has a value, a bar with zero volume repeats the previous value.
+- A new session never inherits the previous session's value.
+- A negative volume or amount throws `ArgumentOutOfRangeException`. VWAP does not check that bar times ascend, so sort your bars first.
+- For futures with a night session, map the night bars to the next trading day inside `sessionOf` so they accumulate together with that day's session.
 
 ## Batch example
 

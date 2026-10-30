@@ -6,8 +6,8 @@
     <RootNamespace>Ozakboy.TradeKit.Indicators</RootNamespace>
 
     <Title>Ozakboy.TradeKit.Indicators — 技術指標函式庫(批次 + 增量)</Title>
-    <Description>零相依的 .NET 技術指標函式庫,每個指標同時提供「批次計算」與「增量(streaming)計算」兩種版本:SMA、EMA、RSI、ATR、MACD、Bollinger Bands、Donchian Channel、ADX(含 +DI/-DI)。增量版每根 K 線只更新常數量的內部狀態,記憶體用量與已處理筆數無關,適合長時間執行的即時交易引擎;暖身期未滿時明確回傳 null 而非 0。全部以 decimal 運算(含自研 decimal 牛頓法平方根),不使用 double/float。Zero-dependency .NET technical analysis library providing both batch and O(1)-memory streaming implementations of SMA, EMA, RSI, ATR, MACD, Bollinger Bands, Donchian Channel and ADX. All math in decimal; explicit warm-up semantics (null until ready).</Description>
-    <PackageTags>ozakboy;technical-analysis;technical-indicators;trading;sma;ema;rsi;atr;macd;bollinger-bands;donchian-channel;adx;wilder;streaming;incremental;realtime;online-algorithm;decimal;ohlcv;candlestick;zero-dependency;dotnet;csharp</PackageTags>
+    <Description>零相依的 .NET 技術指標函式庫,每個指標同時提供「批次計算」與「增量(streaming)計算」兩種版本:SMA、EMA、RSI、ATR、MACD、Bollinger Bands、Donchian Channel、ADX(含 +DI/-DI)、VWAP(成交量加權平均價,每個交易時段重設,支援成交金額或典型價)。增量版每根 K 線只更新常數量的內部狀態,記憶體用量與已處理筆數無關,適合長時間執行的即時交易引擎;暖身期未滿時明確回傳 null 而非 0。全部以 decimal 運算(含自研 decimal 牛頓法平方根),不使用 double/float。Zero-dependency .NET technical analysis library providing both batch and O(1)-memory streaming implementations of SMA, EMA, RSI, ATR, MACD, Bollinger Bands, Donchian Channel, ADX and session-reset VWAP. All math in decimal; explicit warm-up semantics (null until ready).</Description>
+    <PackageTags>ozakboy;technical-analysis;technical-indicators;trading;sma;ema;rsi;atr;macd;bollinger-bands;donchian-channel;adx;vwap;wilder;streaming;incremental;realtime;online-algorithm;decimal;ohlcv;candlestick;zero-dependency;dotnet;csharp</PackageTags>
 
     <PackageProjectUrl>https://github.com/ozakboy/Ozakboy.TradeKit.Indicators</PackageProjectUrl>
     <RepositoryUrl>https://github.com/ozakboy/Ozakboy.TradeKit.Indicators</RepositoryUrl>

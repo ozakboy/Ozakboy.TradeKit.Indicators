@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-31
+
+### Added
+
+- Volume-Weighted Average Price (`Vwap` / `VwapIndicator`). The sums reset whenever the session changes, and the
+  caller decides where a session ends through a `sessionOf` function. The batch and streaming forms produce
+  identical results.
+- `VwapBar`, an immutable `readonly record struct` carrying time, high, low, close, volume and an optional traded
+  amount. VWAP uses the amount when the bar has one. Otherwise it estimates the bar from its typical price times
+  its volume.
+- `volumeMultiplier` converts the volume unit into the unit behind the amount. Pass `1000` for Taiwan stock lots
+  and `1` for futures contracts.
+
+### Notes
+
+- VWAP returns `null` while the current session has traded no volume. After the session has a value, a bar with
+  zero volume repeats the previous value. A new session never inherits the previous session's value.
+- `VwapIndicator.Update` and `Vwap.Calculate` throw `ArgumentOutOfRangeException` for a negative volume or amount.
+  Neither checks that bar times ascend, so sort the bars by time first.
+
 ## [0.1.1] - 2026-09-11
 
 ### Added
@@ -53,6 +73,7 @@ Initial release.
 - Batch and streaming results are asserted exactly equal, with no tolerance, across a range of periods for
   every indicator.
 
-[Unreleased]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/releases/tag/v0.1.0
