@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-02
+
+### Added
+
+- Stochastic oscillator, KD (`Stochastic` / `StochasticIndicator`), using the smoothing that Taiwan charting
+  software uses: `RSV` over the last `period` candles including the current one, then
+  `K = previous K x (kSmoothing - 1) / kSmoothing + RSV / kSmoothing` and D smoothing K the same way with
+  `dSmoothing`. The defaults are `(9, 3, 3)`. The batch and streaming forms produce identical results.
+- `StochasticResult`, an immutable `readonly record struct` carrying `K` and `D`.
+
+### Notes
+
+- At the first candle with a defined RSV (index `period - 1`), the previous K and D are both taken as `50`, so
+  the first value arrives on the `period`-th candle. The smoothing is recursive, so a different starting candle
+  changes the first few dozen values before they converge.
+- When the highest high equals the lowest low, the RSV is `50`. A completely flat series keeps K and D at `50`.
+
 ## [0.2.0] - 2026-10-31
 
 ### Added
@@ -73,7 +90,8 @@ Initial release.
 - Batch and streaming results are asserted exactly equal, with no tolerance, across a range of periods for
   every indicator.
 
-[Unreleased]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/ozakboy/Ozakboy.TradeKit.Indicators/releases/tag/v0.1.0

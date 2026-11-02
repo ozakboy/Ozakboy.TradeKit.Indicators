@@ -42,10 +42,11 @@ dotnet add package Ozakboy.TradeKit.Indicators
 | 唐奇安通道 | `DonchianChannel.Calculate` | `DonchianChannelIndicator` | `DonchianChannelResult` | `n` |
 | 平均趨向指標 | `Adx.Calculate` | `AdxIndicator` | `AdxResult` | `2n` |
 | 成交量加權平均價 | `Vwap.Calculate` | `VwapIndicator` | `decimal` | 時段內第一根有成交量的 K 線 |
+| KD 隨機指標 | `Stochastic.Calculate` | `StochasticIndicator` | `StochasticResult` | `n` |
 
 RSI 要 `n + 1` 筆是因為 `n` 個價差需要 `n + 1` 個價格。ADX 要 `2n` 根是因為兩段 Wilder 平滑串在一起:第一段把方向動能平滑起來,第二段再對算出的 DX 取平均。
 
-需要高低價的指標(ATR、唐奇安、ADX)吃 `Candle`;其餘吃 `decimal` 價格,同時也接受 `Candle` 當作方便寫法,取其收盤價。VWAP 是例外:它吃 `VwapBar`,除了高低收之外還帶時間、成交量與選填的成交金額。
+需要高低價的指標(ATR、唐奇安、ADX、KD)吃 `Candle`;其餘吃 `decimal` 價格,同時也接受 `Candle` 當作方便寫法,取其收盤價。VWAP 是例外:它吃 `VwapBar`,除了高低收之外還帶時間、成交量與選填的成交金額。
 
 ## VWAP
 
@@ -85,6 +86,31 @@ IReadOnlyList<decimal?> series = Vwap.Calculate(bars, TaipeiDate, 1000m);
 - 新時段不會繼承上一個時段的值。
 - 成交量或成交金額為負數時丟出 `ArgumentOutOfRangeException`。VWAP 不檢查時間是否遞增,請先依時間排序。
 - 期貨有夜盤時,請在 `sessionOf` 裡把夜盤時間映射到下一個交易日,夜盤才會與該日日盤一起累計。
+
+## KD 隨機指標
+
+KD 採用台股看盤軟體的平滑法,不是國外常見、以 SMA 平滑的 Slow Stochastic。預設參數 `(9, 3, 3)`。
+
+```csharp
+using Ozakboy.TradeKit.Indicators;
+
+StochasticIndicator kd = new();            // KD(9,3,3)
+
+foreach (Candle candle in candles)
+{
+    if (kd.Update(candle) is StochasticResult value)
+    {
+        Console.WriteLine($"K={value.K:F2} D={value.D:F2}");
+    }
+}
+
+// 批次版參數相同,回傳與輸入索引對齊的序列。
+IReadOnlyList<StochasticResult?> series = Stochastic.Calculate(candles, period: 9, kSmoothing: 3, dSmoothing: 3);
+```
+
+- `RSV = (收盤價 − 最近 n 根最低價) / (最近 n 根最高價 − 最近 n 根最低價) × 100`,視窗含當根。
+- `K = 前一期 K × (kSmoothing − 1) / kSmoothing + RSV / kSmoothing`,D 以 `dSmoothing` 對 K 做同樣的平滑。
+- 第一個值出現在第 `n` 根,此時前一期的 K、D 都以 `50` 起算。平滑是遞迴的,起算的 K 線不同,前幾十根的值就會不同,之後才收斂;要和看盤軟體對數字,請從同一根 K 線開始算。
 
 ## 批次計算範例
 
@@ -179,6 +205,7 @@ if (indicators.TrueForAll(indicator => indicator.IsReady))
 - RSI 在平均跌幅為 `0`、平均漲幅大於 `0` 時回傳 `100`,這是公認慣例;平均漲幅為 `0` 時回傳 `0`。
 - RSI 在**整段完全沒有價格變動**、兩個平均同時為 `0` 時回傳 `100`。標準公式只定義了單邊為 `0` 的兩種情形,這個邊界沒有公認答案;本函式庫刻意跟隨業界慣例——多數實作的除以零分支只看分母(平均跌幅),平均跌幅為 `0` 就回傳 `100`,持平序列自然落在同一條分支。代價是「毫無波動」看起來像「極度超買」,策略若需要分辨這兩者,請自行檢查價格是否有變動(例如同時觀察 ATR),不要只看 RSI。
 - ADX 在平滑真實區間為 `0`、或 `+DI + −DI` 為 `0` 時回報 `0`:沒有區間,自然也沒有方向性。
+- KD 在視窗最高價等於最低價時,RSV 以 `50`(區間正中央)代替,所以整段完全持平時 K、D 會一直維持 `50`。
 
 ## 準確度
 

@@ -42,10 +42,11 @@ Targets `net10.0`. The library has no package reference of any kind — nothing 
 | Donchian Channel | `DonchianChannel.Calculate` | `DonchianChannelIndicator` | `DonchianChannelResult` | `n` |
 | Average Directional Index | `Adx.Calculate` | `AdxIndicator` | `AdxResult` | `2n` |
 | Volume-Weighted Average Price | `Vwap.Calculate` | `VwapIndicator` | `decimal` | first bar of a session with volume |
+| Stochastic (KD) | `Stochastic.Calculate` | `StochasticIndicator` | `StochasticResult` | `n` |
 
 RSI needs `n + 1` prices because `n` price changes require `n + 1` prices. ADX needs `2n` candles because two Wilder smoothing stages stack: the first produces smoothed directional movement, the second averages the resulting DX readings.
 
-Indicators that need highs and lows (ATR, Donchian, ADX) take `Candle`. The rest take a `decimal` price, and also accept `Candle` as a convenience — they use its close. VWAP is the exception: it takes `VwapBar`, which adds a time, a volume and an optional traded amount to the high, low and close.
+Indicators that need highs and lows (ATR, Donchian, ADX, KD) take `Candle`. The rest take a `decimal` price, and also accept `Candle` as a convenience — they use its close. VWAP is the exception: it takes `VwapBar`, which adds a time, a volume and an optional traded amount to the high, low and close.
 
 ## VWAP
 
@@ -85,6 +86,31 @@ Edge cases:
 - A new session never inherits the previous session's value.
 - A negative volume or amount throws `ArgumentOutOfRangeException`. VWAP does not check that bar times ascend, so sort your bars first.
 - For futures with a night session, map the night bars to the next trading day inside `sessionOf` so they accumulate together with that day's session.
+
+## KD (Stochastic)
+
+KD follows the smoothing that Taiwan charting software uses, not the SMA-smoothed "slow stochastic" common elsewhere. The defaults are `(9, 3, 3)`.
+
+```csharp
+using Ozakboy.TradeKit.Indicators;
+
+StochasticIndicator kd = new();            // KD(9,3,3)
+
+foreach (Candle candle in candles)
+{
+    if (kd.Update(candle) is StochasticResult value)
+    {
+        Console.WriteLine($"K={value.K:F2} D={value.D:F2}");
+    }
+}
+
+// The batch form takes the same parameters and returns an index-aligned list.
+IReadOnlyList<StochasticResult?> series = Stochastic.Calculate(candles, period: 9, kSmoothing: 3, dSmoothing: 3);
+```
+
+- `RSV = (close - lowest low of the last n candles) / (highest high - lowest low) x 100`, including the current candle.
+- `K = previous K x (kSmoothing - 1) / kSmoothing + RSV / kSmoothing`, and D smooths K the same way with `dSmoothing`.
+- The first value arrives on the `n`-th candle, where the previous K and D are both taken as `50`. Because the smoothing is recursive, a different starting candle changes the first few dozen values before they converge. To match a charting package, start from the same candle it does.
 
 ## Batch example
 
@@ -179,6 +205,7 @@ These are not theoretical corners; live markets produce them regularly.
 - RSI with an average loss of `0` and a positive average gain returns `100`, the standard convention. Average gain of `0` returns `0`.
 - RSI on a **completely flat window**, where both averages are `0`, returns `100`. The standard formula defines only the two single-sided zero cases, so this boundary has no agreed answer; the library deliberately follows the common convention, where the zero-denominator branch keys on the average loss alone and a flat series therefore falls into it. The cost is that a motionless market reads as extremely overbought, so a strategy that needs to tell the two apart should check whether the price moved at all — for example by watching ATR alongside the RSI.
 - ADX with a smoothed true range of `0`, or with `+DI + -DI` equal to `0`, reports `0` — no range, therefore no directionality.
+- KD on a window whose highest high equals its lowest low uses an RSV of `50`, the middle of the range. A completely flat series therefore keeps K and D at `50`.
 
 ## Accuracy
 

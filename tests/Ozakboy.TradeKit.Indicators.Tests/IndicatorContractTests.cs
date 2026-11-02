@@ -7,7 +7,7 @@ namespace Ozakboy.TradeKit.Indicators.Tests;
 [TestClass]
 public sealed class IndicatorContractTests
 {
-    /// <summary>建立一組涵蓋全部八個指標的實例。Builds one instance of each of the eight indicators.</summary>
+    /// <summary>建立一組涵蓋全部九個以 K 線驅動之指標的實例。Builds one instance of each of the nine candle-driven indicators.</summary>
     private static List<IIndicator> BuildAll() =>
     [
         new SmaIndicator(20),
@@ -18,6 +18,7 @@ public sealed class IndicatorContractTests
         new BollingerBandsIndicator(20, 2m),
         new DonchianChannelIndicator(20),
         new AdxIndicator(14),
+        new StochasticIndicator(),
     ];
 
     private static void Feed(IIndicator indicator, Candle candle)
@@ -32,6 +33,7 @@ public sealed class IndicatorContractTests
             case BollingerBandsIndicator bollinger: bollinger.Update(candle); break;
             case DonchianChannelIndicator donchian: donchian.Update(candle); break;
             case AdxIndicator adx: adx.Update(candle); break;
+            case StochasticIndicator stochastic: stochastic.Update(candle); break;
             default: throw new InvalidOperationException($"未涵蓋的指標型別:{indicator.GetType().Name}");
         }
     }
@@ -127,6 +129,7 @@ public sealed class IndicatorContractTests
         BollingerBandsIndicator bollinger = new(5, 2m);
         DonchianChannelIndicator donchian = new(5);
         AdxIndicator adx = new(5);
+        StochasticIndicator stochastic = new(5);
 
         // VWAP 沒有週期,但「還沒有成交量」就是它的暖身期:Volume 預設為 0,同一根持平 K 線在這裡必須是 null 而不是 0。
         // VWAP has no period; "no volume yet" is its warm-up. Volume defaults to 0, so the same flat bar must give null, not 0.
@@ -143,6 +146,7 @@ public sealed class IndicatorContractTests
             Assert.IsNull(bollinger.Update(flat), "布林 暖身期");
             Assert.IsNull(donchian.Update(flat), "唐奇安 暖身期");
             Assert.IsNull(adx.Update(flat), "ADX 暖身期");
+            Assert.IsNull(stochastic.Update(flat), "KD 暖身期");
             Assert.IsNull(vwap.Update(flatBar), "VWAP 尚無成交量");
             Assert.IsFalse(vwap.IsReady, "VWAP 尚無成交量時不得就緒");
 
@@ -163,6 +167,7 @@ public sealed class IndicatorContractTests
         Assert.AreEqual("BB(20,2)", new BollingerBandsIndicator(20, 2m).Name);
         Assert.AreEqual("DC(20)", new DonchianChannelIndicator(20).Name);
         Assert.AreEqual("ADX(14)", new AdxIndicator(14).Name);
+        Assert.AreEqual("KD(9,3,3)", new StochasticIndicator().Name);
         Assert.AreEqual("VWAP(1000)", new VwapIndicator(time => DateOnly.FromDateTime(time.UtcDateTime), 1000m).Name);
     }
 
